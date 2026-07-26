@@ -10,7 +10,7 @@
   <meta property="og:description" content="工會招募 · 24 小時 AI 客服 · 立刻加 LINE 試用" />
   <meta property="og:type" content="website" />
 
-  <!-- LINE LIFF SDK -->
+  <!-- LINE LIFF SDK · pilot 期免 · M6+ 上真 LIFF ID -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
@@ -138,12 +138,12 @@
     (function () {
       "use strict";
 
-      // ── 設定（v14.69-D · 2026-07-27）─────────────
+      // ── 設定（v14.69-C · 2026-07-27 主人填齊）────────
       var CONFIG = {
-        API_BASE: "https://bordopack-hunter-01-production.up.railway.app",
-        LIFF_ID: "2010843741-v0DH7I0j",
-        LINE_ADD_FRIEND: "https://line.me/R/ti/p/@348exgzb",
-        FALLBACK_LINE_USER_ID: "U_landing_anon"
+        API_BASE: "https://bordopack-hunter-01-production.up.railway.app", // Railway 部署位（Messaging API webhook 同域）
+        LIFF_ID: "2010843741-v0DH7I0j",                                    // Linkwell LINE 登入 Channel · LIFF app
+        LINE_ADD_FRIEND: "https://line.me/R/ti/p/@348exgzb",               // 旺旺小隊獲客經營系統 · 官方帳號加好友
+        FALLBACK_LINE_USER_ID: "U_landing_anon"                            // LIFF 未拿到 uid 的預設值（保險）
       };
 
       // ── DOM refs ─────────────────────────────────
@@ -180,7 +180,7 @@
         return;
       }
 
-      // ── LIFF init ────────────────────────────────
+      // ── LIFF init（pilot 期 · LIFF_ID 未設就跳過）──
       function initLiff() {
         if (!CONFIG.LIFF_ID) {
           return Promise.resolve(CONFIG.FALLBACK_LINE_USER_ID);
@@ -202,7 +202,10 @@
       function postLanded(line_user_id) {
         return fetch(CONFIG.API_BASE + "/api/video/landed", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Tenant-Id": "bordopack"
+          },
           body: JSON.stringify({
             video_id: video_id,
             line_user_id: line_user_id,
@@ -232,16 +235,18 @@
       // ── main flow ──────────────────────────────
       initLiff()
         .then(function (uid) {
-          if (uid === null) return;
+          if (uid === null) return; // LIFF login redirect
           return postLanded(uid).then(function (body) {
             renderOk(body.attribution);
           });
         })
         .catch(function (err) {
+          // 就算 API 失敗 · 也讓用戶能加 LINE · 不擋主流程
           renderError("記錄失敗 · 但仍歡迎您加入");
           console.error(err);
         });
     })();
   </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
 </body>
 </html>
