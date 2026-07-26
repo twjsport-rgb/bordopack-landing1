@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BordoPack · 旺旺小隊獲客經營系統</title>
+
+  <!-- Open Graph · 分享時的預覽卡 -->
+  <meta property="og:title" content="BordoPack · AI 招募助理" />
+  <meta property="og:description" content="工會招募 · 24 小時 AI 客服 · 立刻加 LINE 試用" />
+  <meta property="og:type" content="website" />
+
+  <!-- LINE LIFF SDK · pilot 期免 · M6+ 上真 LIFF ID -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f1f5f9;
+      --sub: #94a3b8;
+      --accent: #60a5fa;
+      --line: #06c755;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .brand {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.5px;
+    }
+    .brand .dot { color: var(--accent); }
+    .tag {
+      color: var(--sub);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .status {
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      border-radius: 10px;
+      padding: 0.875rem 1rem;
+      font-size: 0.925rem;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+      min-height: 4rem;
+    }
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .status.ok {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .cta {
+      display: block;
+      background: var(--line);
+      color: #fff;
+      text-decoration: none;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.875rem;
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      transition: opacity 0.2s;
+    }
+    .cta:hover { opacity: 0.9; }
+    .meta {
+      font-size: 0.75rem;
+      color: var(--sub);
+      text-align: center;
+      margin-top: 1rem;
+      line-height: 1.5;
+    }
+    .meta code {
+      background: var(--bg);
+      padding: 0.1rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--sub);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">Bordo<span class="dot">Pack</span></div>
+    <div class="tag">旺旺小隊獲客經營系統 · v14.69 pilot</div>
+
+    <div id="status" class="status">
+      <span class="spinner"></span>正在為您導入 LINE...
+    </div>
+
+    <a id="line-cta" class="cta" href="#" style="display:none;">
+      加 LINE 好友 · 開始試用
+    </a>
+
+    <div class="meta">
+      video · <code id="v-code">-</code><br />
+      platform · <code id="p-code">-</code><br />
+      attribution · <code id="a-code">-</code>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ── 設定（v14.69-C · 2026-07-27 主人填齊）────────
+      var CONFIG = {
+        API_BASE: "https://bordopack-hunter-01-production.up.railway.app", // Railway 部署位（Messaging API webhook 同域）
+        LIFF_ID: "2010843741-v0DH7I0j",                                    // Linkwell LINE 登入 Channel · LIFF app
+        LINE_ADD_FRIEND: "https://line.me/R/ti/p/@348exgzb",               // 旺旺小隊獲客經營系統 · 官方帳號加好友
+        FALLBACK_LINE_USER_ID: "U_landing_anon"                            // LIFF 未拿到 uid 的預設值（保險）
+      };
+
+      // ── DOM refs ─────────────────────────────────
+      var $status = document.getElementById("status");
+      var $cta = document.getElementById("line-cta");
+      var $v = document.getElementById("v-code");
+      var $p = document.getElementById("p-code");
+      var $a = document.getElementById("a-code");
+
+      // ── URL params ──────────────────────────────
+      var params = new URLSearchParams(location.search);
+      var video_id = params.get("v") || "";
+      var platform = params.get("p") || "";
+
+      $v.textContent = video_id || "(none)";
+      $p.textContent = platform || "(none)";
+
+      // ── 前端 validation ─────────────────────────
+      var VALID_PLATFORMS = ["youtube", "tiktok", "instagram", "facebook"];
+      if (!video_id || !platform) {
+        renderError("網址缺少 v 或 p 參數 · 請從影片連結進入");
+        return;
+      }
+      if (VALID_PLATFORMS.indexOf(platform) === -1) {
+        renderError("platform 只支援 youtube/tiktok/instagram/facebook");
+        return;
+      }
+
+      // ── LIFF init（pilot 期 · LIFF_ID 未設就跳過）──
+      function initLiff() {
+        if (!CONFIG.LIFF_ID) {
+          return Promise.resolve(CONFIG.FALLBACK_LINE_USER_ID);
+        }
+        return liff.init({ liffId: CONFIG.LIFF_ID })
+          .then(function () {
+            if (!liff.isLoggedIn()) {
+              liff.login();
+              return null;
+            }
+            return liff.getProfile().then(function (p) { return p.userId; });
+          })
+          .catch(function () {
+            return CONFIG.FALLBACK_LINE_USER_ID;
+          });
+      }
+
+      // ── POST /api/video/landed ─────────────────
+      function postLanded(line_user_id) {
+        return fetch(CONFIG.API_BASE + "/api/video/landed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            video_id: video_id,
+            line_user_id: line_user_id,
+            platform: platform
+          })
+        }).then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
+      }
+
+      // ── render helpers ─────────────────────────
+      function renderOk(attribution) {
+        $status.className = "status ok";
+        $status.textContent = "✅ 歡迎 · 點下方按鈕加 BordoPack LINE 好友";
+        $cta.href = CONFIG.LINE_ADD_FRIEND;
+        $cta.style.display = "block";
+        $a.textContent = attribution || "(unknown)";
+      }
+      function renderError(msg) {
+        $status.className = "status error";
+        $status.textContent = "⚠ " + msg;
+        $cta.href = CONFIG.LINE_ADD_FRIEND;
+        $cta.style.display = "block";
+      }
+
+      // ── main flow ──────────────────────────────
+      initLiff()
+        .then(function (uid) {
+          if (uid === null) return; // LIFF login redirect
+          return postLanded(uid).then(function (body) {
+            renderOk(body.attribution);
+          });
+        })
+        .catch(function (err) {
+          // 就算 API 失敗 · 也讓用戶能加 LINE · 不擋主流程
+          renderError("記錄失敗 · 但仍歡迎您加入");
+          console.error(err);
+        });
+    })();
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
+</body>
+</html>
