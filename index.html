@@ -153,14 +153,21 @@
       var $p = document.getElementById("p-code");
       var $a = document.getElementById("a-code");
 
-      // ── URL params ──────────────────────────────
+      // ── URL params · v14.69-D · sessionStorage 穿越 LIFF redirect ──
       var params = new URLSearchParams(location.search);
       var video_id = params.get("v") || "";
       var platform = params.get("p") || "";
 
+      // 第一次進頁 · 帶 v/p → 存進 sessionStorage
+      if (video_id) sessionStorage.setItem("bordo_v", video_id);
+      if (platform) sessionStorage.setItem("bordo_p", platform);
+
+      // LIFF redirect 回來 · URL 沒 v/p → 從 sessionStorage 撈
+      if (!video_id) video_id = sessionStorage.getItem("bordo_v") || "";
+      if (!platform) platform = sessionStorage.getItem("bordo_p") || "";
+
       $v.textContent = video_id || "(none)";
       $p.textContent = platform || "(none)";
-
       // ── 前端 validation ─────────────────────────
       var VALID_PLATFORMS = ["youtube", "tiktok", "instagram", "facebook"];
       if (!video_id || !platform) {
